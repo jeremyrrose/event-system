@@ -1,4 +1,5 @@
 from random import random
+import pandas as pd
 
 class Paladin:
     def __init__(self, name, damage, magic_power, attack_speed, spell_speed):
@@ -147,6 +148,25 @@ def do_events(time_limit, *args):
 
         i += 1
 
+def convert_to_dataframe(event_list):
+    
+    parsed_event_list = []
+
+    for event in event_list:
+        damage, magic_power, critical = None, None, None
+        if isinstance(event, Attack):
+            damage = event.damage
+            critical = event.crit
+        if isinstance(event, Spell):
+            magic_power = event.magic_power
+        # row = pd.Series([event.time, event.actor.name, event.__class__.__name__, damage, magic_power, critical ], index=df.columns)
+        # print(row)
+        parsed_event_list.append([event.time, event.actor.name, event.__class__.__name__, damage, magic_power, critical ])
+
+    df = pd.DataFrame(parsed_event_list, columns=["Time","Actor","Type","Damage","Magic Power", "Critical"])
+    return df
+
+
 def main():
 
     # args order: name, damage, magic_power, attack_speed, spell_speed
@@ -156,11 +176,20 @@ def main():
 
     do_events(200, jeremy, hristina, ted)
 
-    for event in hristina.events:
-        print(event)
+    # for event in hristina.events:
+    #     print(event)
+
+    results = convert_to_dataframe(Event.events)
+    # all results in dataframe
+    print(results)
+
+    #only critical
+    print(results[results["Critical"] == True])
+
+    print("\n\ntotal magic power of spells: ", sum(results[results["Type"] == "Spell"]["Magic Power"]))
 
     # all events ever performed by any character
-    print(f"\n\n{len(Event.events)} events: ", Event.events)
+    # print(f"\n\n{len(Event.events)} events: ", Event.events)
 
     print("jeremy's total damage: ", sum(event.damage_estimate() for event in jeremy.events))
     print("hristina's total damage: ", sum(event.damage_estimate() for event in hristina.events))
