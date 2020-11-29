@@ -19,6 +19,18 @@ class Paladin:
         self.last_spell = 0
         self.last_heal = 0
 
+    def set_vengeance(self, event):
+        if event.crit:
+            self.vengeance = event.time
+        elif self.vengeance and event.time - self.vengeance > 20 and not event.crit:
+            self.vengeance = None
+
+    def set_last_attack(self, event):
+        self.last_attack = event.time
+
+    def set_last_spell(self, event):
+        self.last_spell = event.time
+
     # if spell_speed is a variable factor, it would also make sense to have a spell_ready method
     def attack_ready(self, time):
         return (time - self.last_attack) > self.attack_speed
@@ -40,8 +52,8 @@ class Paladin:
         """
 
         # if vengeance is set, check if vengeance has expired
-        if self.vengeance and time - self.vengeance > 80:
-            self.vengeance = None
+        # if self.vengeance and (time - self.vengeance) > 80:
+        #     self.vengeance = None
 
         if self.attack_ready(time):
             damage = self.damage
@@ -50,10 +62,10 @@ class Paladin:
             if self.vengeance and time - self.vengeance < 200:
                 damage = damage * 1.25
 
-            return Attack(self, time, damage=damage)
+            return Attack(self, time, actor_events=True, damage=damage, callbacks=[self.set_last_attack, self.set_vengeance])
 
         if self.spell_ready(time):
-            return Spell(self, time, magic_power=self.magic_power)
+            return Spell(self, time, actor_events=True, magic_power=self.magic_power, callbacks=[self.set_last_spell])
 
     def __repr__(self):
         return f"{self.name} the {self.__class__.__name__}"
@@ -64,47 +76,55 @@ class Event:
     """
     Creates an Event.
 
-    Args:
-        actor (Paladin): The Paladin instance performing the event.
-        time (int): Sequential time value based on do_events function below.
+    Arguments:
+        actor (any object): The object performing the event.
+        time (int): Sequential time value.
+
+    Keyword Arguments:
+        actor_events (boolean): Toggles appending event to actor.events (if actor has events attribute).
+        callbacks (list): Functions to be invoked (with current event instance as argument) at conclusion of __init__.
     """
 
     # class variable containing all events by any actor
     events = []
 
-    def __init__(self, actor, time):
-        self.time = time
-        self.actor = actor
-        self.actor.events.append(self)
+    def __init__(self, actor, time, **kwargs):
+        self.__time = time
+        self.__actor = actor
         self.events.append(self)
+        if kwargs.get('actor_events') and hasattr(self.__actor, 'events') and isinstance(self.__actor.events, list):
+            self.__actor.events.append(self)
+        self.__callbacks = kwargs.get('callbacks') or ()
 
-    # this is a super-weird way to do this... 
-    # would make more sense to have each child class have a different def of damage_estimate
-    def damage_estimate(self):
-        if isinstance(self, Attack):
-            return self.damage
-        elif isinstance(self, Spell):
-            return self.magic_power
-        else:
-            return 0
+    def callbacks(self):
+        for callback in self.__callbacks:
+            try:
+                callback(self)
+            except:
+                print(f"{callback} could not be executed.")
 
     def __repr__(self):
         return f"{self.__class__.__name__} by {self.actor} at time {self.time}"
 
+    @property
+    def time(self):
+        return self.__time
+
+    @property
+    def actor(self):
+        return self.__actor
+
 
 class Attack(Event):
 
-    def __init__(self, actor, time, **kwargs):
-        super().__init__(actor, time)
-        self.crit = False
-
-        # random critical hit activates actor's vengeance
-        if random() > 0.90:
-            self.crit = True
-            actor.vengeance = time
-
-        self.actor.last_attack = time
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.crit = random() > 0.90
         self.damage = kwargs.get('damage')
+        super().callbacks()
+
+    def damage_estimate(self):
+        return self.damage
     
     def __repr__(self):
         base = super().__repr__()
@@ -115,14 +135,18 @@ class Attack(Event):
 
 class Spell(Event):
 
-    def __init__(self, actor, time, **kwargs):
-        super().__init__(actor, time)
-        self.actor.last_spell = time
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.magic_power = kwargs.get('magic_power')
+        super().callbacks()
+
+    def damage_estimate(self):
+        return self.magic_power
     
     def __repr__(self):
         base = super().__repr__()
         return f"{base}: magic power {self.magic_power}"
+
 
 
 def do_events(time_limit, *args):
@@ -194,6 +218,9 @@ def main():
     print("jeremy's total damage: ", sum(event.damage_estimate() for event in jeremy.events))
     print("hristina's total damage: ", sum(event.damage_estimate() for event in hristina.events))
     print("ted's total damage: ", sum(event.damage_estimate() for event in ted.events))
+
+    derf = Event('hi there', 340, actor_events=True)
+    print(derf)
 
 if __name__ == '__main__':
     main()
