@@ -24,6 +24,10 @@ class Event:
         self.__callbacks = kwargs.get('callbacks') or ()
 
     def callbacks(self):
+        """
+        Invoke super().callbacks() in child class to run all.
+        This will likely be done at the conclusion of the __init__.
+        """
         for callback in self.__callbacks:
             try:
                 callback(self)
