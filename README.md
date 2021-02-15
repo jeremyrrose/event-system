@@ -13,3 +13,7 @@ An `Event` class whose instances can each alter the status of their own `actor` 
         callbacks (list): Functions to be invoked (with current event instance as argument) at conclusion of __init__.
     """
 ```
+
+### Demonstration File
+
+`events.py` in the root directory describes a simulation of a generic fantasy game. Both the `Attack` and `Spell` classes extend `Event`.
