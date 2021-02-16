@@ -74,6 +74,13 @@ class Paladin:
 
 class Attack(Event):
 
+    """
+    Determines crit status on initiation. 
+    Callbacks from Paladin instance should include:
+    self.set_last_attack
+    self.set_vengeance
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.crit = random() > 0.90
@@ -91,6 +98,11 @@ class Attack(Event):
 
 
 class Spell(Event):
+
+    """
+    Callbacks from Paladin instance should include:
+    self.set_last_spell
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
