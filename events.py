@@ -188,8 +188,5 @@ def main():
     print("hristina's total damage: ", sum(event.damage_estimate() for event in hristina.events))
     print("ted's total damage: ", sum(event.damage_estimate() for event in ted.events))
 
-    derf = Event('hi there', 340, actor_events=True)
-    print(derf)
-
 if __name__ == '__main__':
     main()
